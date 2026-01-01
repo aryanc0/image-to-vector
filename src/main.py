@@ -1,5 +1,6 @@
 import cv2
 import svgwrite
+import ezdxf
 
 
 img = cv2.imread("input/sample.png")
@@ -22,11 +23,19 @@ contours, _ = cv2.findContours(
 h, w = gray.shape
 dwg = svgwrite.Drawing("output/result.svg", size=(w, h))
 
+dxf_doc = ezdxf.new()
+dxf_msp = dxf_doc.modelspace()
+
+
 for cnt in contours:
-    if cv2.contourArea(cnt) < 100:  # 🔹 remove tiny noise
+    if cv2.contourArea(cnt) < 150:
         continue
 
-    points = [(int(p[0][0]), int(p[0][1])) for p in cnt]
+    epsilon = 0.01 * cv2.arcLength(cnt, True)
+    approx = cv2.approxPolyDP(cnt, epsilon, True)
+
+    points = [(int(p[0][0]), int(p[0][1])) for p in approx]
+
     if len(points) > 1:
         dwg.add(
             dwg.polyline(
@@ -36,6 +45,13 @@ for cnt in contours:
                 stroke_width=1
             )
         )
+        
+dxf_msp.add_lwpolyline(points)
+
+
 
 dwg.save()
-print("SVG saved in output/result.svg")
+dxf_doc.saveas("output/result.dxf")
+
+print("SVG and DXF saved in output Thank you!!!/")
+
